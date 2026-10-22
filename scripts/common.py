@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -67,12 +68,18 @@ def scrub(text):
 class Client:
     def __init__(self, budget):
         self.budget, self.spent, self.lock = budget, 0.0, threading.Lock()
-        self.token = subprocess.check_output(config.get("token_cmd"), text=True).strip()
+        self._refresh()
+
+    def _refresh(self):  # API access tokens expire after 1 h; the full run died with 401s at that mark
+        self.token, self.token_at = subprocess.check_output(config.get("token_cmd"), text=True).strip(), time.time()
 
     def chat(self, system, user, max_tokens=1200):
         with self.lock:
             if self.spent >= self.budget:
                 raise RuntimeError(f"budget ${self.budget} reached")
+        with self.lock:
+            if time.time() - self.token_at > 2700:
+                self._refresh()
         body = {
             "model": config.get("llm_model"),
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],

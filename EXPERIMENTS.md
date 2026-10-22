@@ -13,7 +13,7 @@ Conventions:
 |---|---|---|---|---|---|
 | 2026-10-22 | token count | one real CV + 200 postings | CV ~1.7k tokens, pair median ~2.55k, p90 ~3.25k, max < 4,096 | $0 | 3 tokenizers within ~5% after whitespace collapse |
 | 2026-10-22 | pilots 1-6 | 20 CVs × 4 pairs each | positive share 1% → 34% | ~$0.70 | see DECISIONS.md, "pilot" entries |
-| 2026-10-22 | full run | 2,000 CVs × 4 pairs | 1,973 CVs, 7,891 pairs; labelling in progress | CVs $2.59; labels est. ~$10.5 | `data/full_run.sh`, log `data/full_run.log` |
+| 2026-10-22 | full run | 2,000 CVs × 4 pairs | 1,973 CVs, 7,891 pairs; labelling in progress | CVs $2.59; labels est. ~$10.5 | `data/full_run.sh`; first pass stopped at 4,382 labels when the 1 h API token expired (401s), resumed after adding token refresh |
 
 ## Browser speed
 
