@@ -107,6 +107,9 @@ def line_logits(tok_met, tok_must, lines):
 def loss_fn(out, labels, lines, w_line):
     logits, tok_met, tok_must = out
     loss = sum(F.cross_entropy(logits[h].float(), labels[h]) for h in HEADS)
+    # zero-weight terms keep the line heads in the graph when a batch has no requirement lines (one-example
+    # batches with large models); otherwise DDP stops with "parameters that were not used in producing loss"
+    loss = loss + 0.0 * (tok_met.float().sum() + tok_must.float().sum())
     met, must = line_logits(tok_met, tok_must, lines)
     if met is not None:
         y_met = torch.tensor([l[3] for l in lines], device=met.device)
