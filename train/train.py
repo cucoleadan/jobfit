@@ -10,6 +10,7 @@ Saves the best checkpoint by validation verdict macro-F1, per-head temperatures 
 and test metrics (accuracy, macro-F1, ECE) to <out>/metrics.json.
 """
 import argparse
+import datetime
 import json
 import math
 import os
@@ -210,7 +211,7 @@ def main():
 
     ddp = "LOCAL_RANK" in os.environ
     if ddp:
-        dist.init_process_group("nccl")
+        dist.init_process_group("nccl", timeout=datetime.timedelta(hours=1))  # rank 0 evaluates alone; large takes > 10 min
         rank, world = dist.get_rank(), dist.get_world_size()
         device = torch.device("cuda", int(os.environ["LOCAL_RANK"]))
         torch.cuda.set_device(device)
