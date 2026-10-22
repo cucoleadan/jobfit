@@ -17,7 +17,8 @@ import random
 import time
 from pathlib import Path
 
-import torch
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # less fragmentation at 4k tokens
+import torch  # noqa: E402
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
@@ -201,6 +202,7 @@ def main():
     ap.add_argument("--w-line", type=float, default=0.5)
     ap.add_argument("--limit", type=int, default=0, help="train on this many examples (timing runs)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--optim", choices=["adamw", "adamw8bit"], default="adamw")
     args = ap.parse_args()
 
     ddp = "LOCAL_RANK" in os.environ
@@ -234,7 +236,11 @@ def main():
     if ddp:
         model = nn.parallel.DistributedDataParallel(model, device_ids=[device.index])
     core = model.module if ddp else model
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
+    if args.optim == "adamw8bit":  # 8-bit optimizer state: ModernBERT-large OOMs on a 16 GB T4 with fp32 AdamW
+        import bitsandbytes as bnb
+        opt = bnb.optim.AdamW8bit(model.parameters(), lr=args.lr, weight_decay=0.01)
+    else:
+        opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     per_epoch = math.ceil(len(batches(enc["train"], args.tokens_per_batch, True, 0)) / world / args.accum)
     sched = get_linear_schedule_with_warmup(opt, int(0.06 * per_epoch * args.epochs), per_epoch * args.epochs)
     scaler = torch.amp.GradScaler(enabled=device.type == "cuda")

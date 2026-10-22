@@ -144,3 +144,7 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 - **More distinct CVs:** 250 new CVs with the standard 4 pairs, so the model sees more people, not only more pairs per person.
 - **Frozen split:** v1 CVs (ids ≤ 1,973) keep their exact v1 split (verified byte-identical); new CVs split by id (`id % 10`: 0-7 train, 8 val, 9 test). New pairs follow their CV's split, so v1 and v2 models can be compared on the v1 test examples.
 - **Budget:** capped at $24 of the $30 project cap, leaving a reserve for the human-evaluation set and fixes.
+
+## 2026-10-22: 8-bit AdamW for ModernBERT-large (`train.py --optim adamw8bit`)
+
+- ModernBERT-large (395M) runs out of memory on a 16 GB T4 at 4,096 tokens even with one sequence per step: fp32 weights + grads + AdamW state ≈ 6.3 GB per GPU before activations. 8-bit AdamW (bitsandbytes) cuts the optimizer state by ~2.4 GB. Only large uses it; smaller models keep fp32 AdamW, so their results are unaffected. Noted as a confound when comparing large with the others.

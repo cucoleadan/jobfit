@@ -23,7 +23,7 @@ DS = "jobfit-data"
 KAGGLE = str(ROOT / ".venv" / "bin" / "kaggle")
 
 RUNNER = '''import glob, os, subprocess, sys
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U", "transformers>=4.48"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U", "transformers>=4.48", "bitsandbytes"], check=True)
 import torch, transformers
 print("torch", torch.__version__, "transformers", transformers.__version__, "gpus", torch.cuda.device_count(), flush=True)
 subprocess.run(["nvidia-smi", "-L"])
