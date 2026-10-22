@@ -1,0 +1,96 @@
+"""Labelled pairs in data/work.db -> data/dataset/{train,val,test}.jsonl, split by CV (80/10/10).
+
+Each example: cv text, job text, the four pair labels, and the job's requirement lines with a per-line label,
+found by matching each DeepSeek requirement to the posting line it came from. The line head is what powers
+"top gaps": must-have lines labelled `no`.
+"""
+import json
+import random
+import re
+import sqlite3
+from collections import Counter
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+WORK = ROOT / "data" / "work.db"
+OUT = ROOT / "data" / "dataset"
+
+VERDICT = ["apply", "stretch", "skip"]
+LOCATION = ["yes", "unclear", "no"]
+SENIORITY = ["below", "at", "above"]
+LINE_MET = ["none", "yes", "partial", "no"]  # none = not a requirement line
+STOP = set("a an and or the of to in for with on at by as is are be your you we our will have has from this that "
+           "it its their they who what which experience years year strong ability skills knowledge".split())
+
+
+def words(text):
+    return {w for w in re.findall(r"[a-z0-9+#.]+", text.lower()) if w not in STOP and len(w) > 1}
+
+
+def job_lines(job):
+    """Character spans of non-empty lines in the job text."""
+    spans, pos = [], 0
+    for line in job.split("\n"):
+        start, end = pos, pos + len(line)
+        pos = end + 1
+        if len(line.strip(" -*•\t")) >= 15:
+            spans.append((start, end))
+    return spans
+
+
+def align(job, requirements):
+    """Match each requirement to its best posting line by word overlap; unmatched lines are 'none'."""
+    spans = job_lines(job)
+    lw = [words(job[a:b]) for a, b in spans]
+    met = ["none"] * len(spans)
+    must = [0] * len(spans)
+    matched = 0
+    for r in requirements:
+        rw = words(r.get("text", ""))
+        if not rw:
+            continue
+        scores = [len(rw & w) / len(rw) for w in lw]
+        if scores and max(scores) >= 0.5:
+            i = scores.index(max(scores))
+            met[i] = r.get("met") if r.get("met") in LINE_MET else "none"
+            must[i] = int(r.get("kind") == "must")
+            matched += 1
+    return [{"span": s, "met": m, "must": k} for s, m, k in zip(spans, met, must)], matched
+
+
+def main():
+    con = sqlite3.connect(WORK)
+    rows = con.execute("""select p.cv_id, p.kind, c.cv, s.text, p.label, p.derived from pairs p
+                          join cvs c on c.id = p.cv_id join postings s on s.id = p.posting_id
+                          where p.label is not null""").fetchall()
+    cv_ids = sorted({r[0] for r in rows})
+    random.Random(0).shuffle(cv_ids)
+    n = len(cv_ids)
+    split = {cid: "train" if i < 0.8 * n else "val" if i < 0.9 * n else "test" for i, cid in enumerate(cv_ids)}
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    files = {k: open(OUT / f"{k}.jsonl", "w") for k in ("train", "val", "test")}
+    stats, req_total, req_matched = Counter(), 0, 0
+    for cv_id, kind, cv, job, label, derived in rows:
+        lab, d = json.loads(label), json.loads(derived)
+        lines, matched = align(job, lab.get("requirements", []))
+        req_total += len(lab.get("requirements", []))
+        req_matched += matched
+        ex = {"cv_id": cv_id, "kind": kind, "cv": cv, "job": job,
+              "verdict": VERDICT.index(d["verdict"]),
+              "location": LOCATION.index(lab["location_eligible"]) if lab.get("location_eligible") in LOCATION else 1,
+              "seniority": SENIORITY.index(d["candidate_vs_role"]),
+              "must_met": int(bool(d["must_haves_met"])),
+              "lines": lines}
+        files[split[cv_id]].write(json.dumps(ex) + "\n")
+        stats[split[cv_id]] += 1
+    for f in files.values():
+        f.close()
+    (OUT / "labels.json").write_text(json.dumps({"verdict": VERDICT, "location": LOCATION, "seniority": SENIORITY,
+                                                 "line_met": LINE_MET}, indent=1))
+    print(f"CVs {n}, examples {dict(stats)}")
+    print(f"requirements matched to a posting line: {req_matched}/{req_total} = {req_matched / max(1, req_total):.0%}")
+
+
+if __name__ == "__main__":
+    main()
