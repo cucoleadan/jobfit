@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "data" / "work.db"
 OUT = ROOT / "data" / "dataset"
+V1_MAX_CV = 1973  # CVs of dataset v1; later CVs are split by id
 
 VERDICT = ["apply", "stretch", "skip"]
 LOCATION = ["yes", "unclear", "no"]
@@ -64,9 +65,11 @@ def main():
                           join cvs c on c.id = p.cv_id join postings s on s.id = p.posting_id
                           where p.label is not null""").fetchall()
     cv_ids = sorted({r[0] for r in rows})
-    random.Random(0).shuffle(cv_ids)
+    v1 = [c for c in cv_ids if c <= V1_MAX_CV]  # the v1 split stays frozen so test scores compare across versions
+    random.Random(0).shuffle(v1)
+    split = {cid: "train" if i < 0.8 * len(v1) else "val" if i < 0.9 * len(v1) else "test" for i, cid in enumerate(v1)}
+    split.update({c: "train" if c % 10 < 8 else "val" if c % 10 == 8 else "test" for c in cv_ids if c > V1_MAX_CV})
     n = len(cv_ids)
-    split = {cid: "train" if i < 0.8 * n else "val" if i < 0.9 * n else "test" for i, cid in enumerate(cv_ids)}
 
     OUT.mkdir(parents=True, exist_ok=True)
     files = {k: open(OUT / f"{k}.jsonl", "w") for k in ("train", "val", "test")}

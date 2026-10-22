@@ -15,6 +15,7 @@ Conventions:
 | 2026-10-22 | pilots 1-6 | 20 CVs × 4 pairs each | positive share 1% → 34% | ~$0.70 | see DECISIONS.md, "pilot" entries |
 | 2026-10-22 | full run | 2,000 CVs × 4 pairs | 1,973 CVs, 7,891 labelled pairs; verdict skip 5,581 / apply 1,411 / stretch 899; seniority above only 325 | CVs $2.59, labels $10.64, total spend to date $14.33 | `data/full_run.sh`; first pass stopped at 4,382 labels when the 1 h API token expired (401s), resumed after adding token refresh. ~2.76k input / 434 output tokens per pair |
 | 2026-10-22 | dataset v1 | 7,891 pairs | split by CV: train 6,315 / val 788 / test 788; 99% of requirements (71,681/72,305) matched to a posting line | $0 | `scripts/build_dataset.py` |
+| 2026-10-22 | dataset v2 | v1 + 244 new CVs (976 standard pairs) + 3,833 targeted pairs (`over`, `stretch`) | 2,217 CVs, 12,699 pairs; train 10,171 / val 1,270 / test 1,258 (v1 split frozen); seniority `above` 325 → 1,033, verdict `stretch` 899 → 1,913 | CVs $0.34, labels $6.37; project total $21.03 | `data/v2_run.sh`; 6 CVs and 1 label lost to API errors |
 
 ## Browser speed
 
@@ -31,6 +32,7 @@ Conventions:
 | 2026-10-22 | timing-base | ModernBERT-base | 475 real CV × posting pairs, **random labels** | 1 | Kaggle 2×T4 | 1.3 min/epoch (0.9M tokens), 1.16 s/step, ~3 min total | fits at 4,096 tokens; metrics meaningless (random labels); weights discarded |
 | 2026-10-22 | ettin32 | Ettin-32M (31.9M params) | v1, lr 1e-4, seed 0 | 3 | Kaggle 2×T4 | ~4-5 min/epoch, 18 min total | test: verdict acc 0.789 / macro-F1 0.536; location 0.829 / 0.824; seniority 0.748 / 0.508; must-haves met 0.769 / 0.759; requirement lines 0.879 / 0.621. ECE ≤ 0.04 after temperature scaling. Val still rising at epoch 3 → likely undertrained. `results/ettin32/` |
 | 2026-10-22 | ettin68 | Ettin-68M (68.2M params) | v1, lr 1e-4, seed 0 | 3 | Kaggle 2×T4 | ~10-12 min/epoch, 38 min total | test: verdict acc 0.808 / macro-F1 0.589; location 0.846 / 0.839; seniority 0.751 / 0.511; must-haves met 0.787 / 0.779; requirement lines 0.891 / 0.661. ECE ≤ 0.041. Beats 32M on every head; seniority flat. Val verdict F1 still rising at epoch 3. `results/ettin68/` |
+| 2026-10-22 | mbbase | ModernBERT-base (149M params) | v1, lr 5e-5, seed 0 | 3 | Kaggle 2×T4 | ~18-21 min/epoch, 68 min total | test: verdict acc 0.797 / macro-F1 0.550; location 0.826 / 0.819; seniority 0.728 / 0.495; must-haves met 0.770 / 0.763; requirement lines 0.882 / 0.630. ECE ≤ 0.053. **Below Ettin-68M on every head**: slower start (val location F1 0.48 after epoch 1), likely undertrained at 3 epochs / lr 5e-5. `results/mbbase/` |
 
 ## Planned
 

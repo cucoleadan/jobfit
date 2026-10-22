@@ -136,3 +136,11 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 - **Calibration:** one temperature per head fitted on validation; test reports accuracy, macro-F1 and ECE per head.
 - **Kaggle:** a private dataset (data + train.py) and private script kernels launched from the command line with `--accelerator NvidiaTeslaT4` (the 2×T4 shape). Weekly quota 30 GPU h, resets Saturdays 00:00 UTC.
 - **Timing run first:** ~600 synthetic CVs × real postings with random labels, only to measure speed and memory at 4k tokens; that model is discarded.
+
+## 2026-10-22: dataset v2, targeted pairs for the rare classes (`pipeline.py extra`, `data/v2_run.sh`)
+
+- **Why:** on v1, Ettin-32M → 68M (2× params) gained +0.05 verdict macro-F1 and nothing on seniority. The weak classes are rare in v1: seniority `above` (over-qualified candidate) 325 of 7,891, verdict `stretch` 899. That points at data, not model size.
+- **Targeted, not uniform:** uniform extra pairs would be mostly easy `skip`s. Two new pair kinds per CV: `over` (a similar job 2+ levels below the CV's level; senior+ CVs only) and `stretch` (a similar job exactly one level above). Same labeller and rules as v1; only the sampling changes.
+- **More distinct CVs:** 250 new CVs with the standard 4 pairs, so the model sees more people, not only more pairs per person.
+- **Frozen split:** v1 CVs (ids ≤ 1,973) keep their exact v1 split (verified byte-identical); new CVs split by id (`id % 10`: 0-7 train, 8 val, 9 test). New pairs follow their CV's split, so v1 and v2 models can be compared on the v1 test examples.
+- **Budget:** capped at $24 of the $30 project cap, leaving a reserve for the human-evaluation set and fixes.

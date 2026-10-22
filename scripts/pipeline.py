@@ -3,6 +3,7 @@
   python scripts/pipeline.py postings          # clean + tag postings from data/pages_snapshot.db
   python scripts/pipeline.py cvs --n 20         # sample careers, DeepSeek writes the CVs
   python scripts/pipeline.py pairs --per-cv 4   # per CV: its target job, a near one, a far-level one, a location mismatch
+  python scripts/pipeline.py extra              # targeted pairs for rare classes (over-qualified, stretch)
   python scripts/pipeline.py label              # DeepSeek labels pairs, Python derives verdicts
   python scripts/pipeline.py report             # label distribution per head, spend
 
@@ -334,6 +335,30 @@ def cmd_pairs(args):
     print(f"added {n} pairs; total {con.execute('select count(*) from pairs').fetchone()[0]}")
 
 
+def cmd_extra(args):
+    """Targeted pairs for the rare classes in v1 (DECISIONS.md, dataset v2):
+    over    = similar job 2+ levels below the CV (over-qualified, seniority `above`), senior+ CVs only
+    stretch = similar job exactly one level above the CV (mostly `stretch`/`apply` verdicts)"""
+    con = db()
+    rng = random.Random(args.seed)
+    ix = Index(con)
+    n = 0
+    todo = con.execute("""select id, persona, facts from cvs where id not in
+                          (select cv_id from pairs where kind in ('over', 'stretch'))""").fetchall()
+    for cv_id, persona, facts in todo:
+        p, cl = json.loads(persona), LEVELS.index(json.loads(facts)["level"])
+        own = {r["posting_id"] for r in p["roles"]}
+        ok = [x for x in ix.similar(p["target_id"]) if x[0] not in own and can_work(p["location"], x[3])]
+        picks = [("over", [x for x in ok if LEVELS.index(x[2]) <= cl - 2][:40]),
+                 ("stretch", [x for x in ok if LEVELS.index(x[2]) == cl + 1][:20])]
+        for kind, pool in picks:
+            if pool:
+                pid = rng.choice(pool)[0]
+                n += con.execute("insert or ignore into pairs (cv_id, posting_id, kind) values (?,?,?)", (cv_id, pid, kind)).rowcount
+    con.commit()
+    print(f"added {n} targeted pairs; total {con.execute('select count(*) from pairs').fetchone()[0]}")
+
+
 def domestic_override(lab, persona_loc, job_loc):
     """The labeller often ignores the domestic-relocation rule; if the posting's own location names the
     candidate's country, 'no' becomes 'unclear' (synthetic personas are authorized in their own country)."""
@@ -396,7 +421,7 @@ def cmd_report(args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["postings", "cvs", "pairs", "label", "report"])
+    ap.add_argument("stage", choices=["postings", "cvs", "pairs", "extra", "label", "report"])
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--per-cv", type=int, default=4)
     ap.add_argument("--limit", type=int, default=0)
