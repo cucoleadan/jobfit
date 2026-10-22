@@ -30,6 +30,7 @@ Conventions:
 |---|---|---|---|---|---|---|---|
 | 2026-10-22 | timing-base | ModernBERT-base | 475 real CV × posting pairs, **random labels** | 1 | Kaggle 2×T4 | 1.3 min/epoch (0.9M tokens), 1.16 s/step, ~3 min total | fits at 4,096 tokens; metrics meaningless (random labels); weights discarded |
 | 2026-10-22 | ettin32 | Ettin-32M (31.9M params) | v1, lr 1e-4, seed 0 | 3 | Kaggle 2×T4 | ~4-5 min/epoch, 18 min total | test: verdict acc 0.789 / macro-F1 0.536; location 0.829 / 0.824; seniority 0.748 / 0.508; must-haves met 0.769 / 0.759; requirement lines 0.879 / 0.621. ECE ≤ 0.04 after temperature scaling. Val still rising at epoch 3 → likely undertrained. `results/ettin32/` |
+| 2026-10-22 | ettin68 | Ettin-68M (68.2M params) | v1, lr 1e-4, seed 0 | 3 | Kaggle 2×T4 | ~10-12 min/epoch, 38 min total | test: verdict acc 0.808 / macro-F1 0.589; location 0.846 / 0.839; seniority 0.751 / 0.511; must-haves met 0.787 / 0.779; requirement lines 0.891 / 0.661. ECE ≤ 0.041. Beats 32M on every head; seniority flat. Val verdict F1 still rising at epoch 3. `results/ettin68/` |
 
 ## Planned
 
