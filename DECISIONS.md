@@ -148,3 +148,7 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 ## 2026-10-22: 8-bit AdamW for ModernBERT-large (`train.py --optim adamw8bit`)
 
 - ModernBERT-large (395M) runs out of memory on a 16 GB T4 at 4,096 tokens even with one sequence per step: fp32 weights + grads + AdamW state ≈ 6.3 GB per GPU before activations. 8-bit AdamW (bitsandbytes) cuts the optimizer state by ~2.4 GB. Only large uses it; smaller models keep fp32 AdamW, so their results are unaffected. Noted as a confound when comparing large with the others.
+
+## 2026-10-23: 6 epochs as the default
+
+- Ettin-68M on v2 for 8 epochs: validation macro-F1 rises through epoch 4-5 (verdict 0.44 → 0.66, seniority 0.38 → 0.61), then stays within ±0.02 (noise) for epochs 5-8, with no drop (no overfitting). 6 epochs keeps a margin over the observed plateau without paying for flat epochs. Caveat: the linear decay schedule spans the whole run, so a 6-epoch run is not identical to epoch 6 of an 8-epoch run; the best checkpoint by validation verdict macro-F1 is kept either way.

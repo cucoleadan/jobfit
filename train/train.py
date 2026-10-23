@@ -198,7 +198,7 @@ def main():
     ap.add_argument("--data", default="data/dataset")
     ap.add_argument("--out", default="out")
     ap.add_argument("--max-len", type=int, default=4096)
-    ap.add_argument("--epochs", type=int, default=3)
+    ap.add_argument("--epochs", type=int, default=6)
     ap.add_argument("--lr", type=float, default=5e-5)
     ap.add_argument("--tokens-per-batch", type=int, default=8192, help="per GPU per step")
     ap.add_argument("--accum", type=int, default=4)
