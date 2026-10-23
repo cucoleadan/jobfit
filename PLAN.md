@@ -91,6 +91,8 @@ DeepSeek V4.1 Flash (open weights, MIT), served through a commercial OpenAI-comp
 8. **Ship.**
    - Two tiers on Hugging Face (ONNX q4f16): fast (Ettin, ~30-70 MB) and quality (ModernBERT-base, ~140 MB), with a model card including the size / accuracy / speed curve. The extension picks the tier from the hardware.
    - Browser demo with Transformers.js: paste CV and job posting, built-in synthetic examples.
+   - CV input goes through the same `normalize_cv` as training (port `scripts/cvtext.py` to JS; HTML via the DOM's `innerText`).
+   - **Display rule for location (no retraining):** show "Not eligible (location)" and a `skip` only when calibrated P(location = no) ≥ ~0.8; below that show "Location unclear, check the posting" and cap the verdict at `stretch`. Headers are often stricter than real hiring (e.g. "US / EMEA – Remote" lists, EU countries, "or fully remote"). Tune the threshold on the author's private real-CV check and the human set.
    - v2: Chrome extension that scores the job page you are on.
    - Write-up.
 
