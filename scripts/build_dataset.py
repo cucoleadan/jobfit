@@ -4,12 +4,17 @@ Each example: cv text, job text, the four pair labels, and the job's requirement
 found by matching each DeepSeek requirement to the posting line it came from. The line head is what powers
 "top gaps": must-have lines labelled `no`.
 """
+import argparse
 import json
 import random
+import sys
 import re
 import sqlite3
 from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from cvtext import normalize_cv  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "data" / "work.db"
@@ -60,6 +65,11 @@ def align(job, requirements):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", default=str(OUT))
+    ap.add_argument("--raw-cv", action="store_true", help="skip CV normalisation (datasets v1/v2 were built without it)")
+    a = ap.parse_args()
+    out_dir = Path(a.out)
     con = sqlite3.connect(WORK)
     rows = con.execute("""select p.cv_id, p.kind, c.cv, s.text, p.label, p.derived from pairs p
                           join cvs c on c.id = p.cv_id join postings s on s.id = p.posting_id
@@ -71,15 +81,15 @@ def main():
     split.update({c: "train" if c % 10 < 8 else "val" if c % 10 == 8 else "test" for c in cv_ids if c > V1_MAX_CV})
     n = len(cv_ids)
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    files = {k: open(OUT / f"{k}.jsonl", "w") for k in ("train", "val", "test")}
+    out_dir.mkdir(parents=True, exist_ok=True)
+    files = {k: open(out_dir / f"{k}.jsonl", "w") for k in ("train", "val", "test")}
     stats, req_total, req_matched = Counter(), 0, 0
     for cv_id, kind, cv, job, label, derived in rows:
         lab, d = json.loads(label), json.loads(derived)
         lines, matched = align(job, lab.get("requirements", []))
         req_total += len(lab.get("requirements", []))
         req_matched += matched
-        ex = {"cv_id": cv_id, "kind": kind, "cv": cv, "job": job,
+        ex = {"cv_id": cv_id, "kind": kind, "cv": cv if a.raw_cv else normalize_cv(cv), "job": job,
               "verdict": VERDICT.index(d["verdict"]),
               "location": LOCATION.index(lab["location_eligible"]) if lab.get("location_eligible") in LOCATION else 1,
               "seniority": SENIORITY.index(d["candidate_vs_role"]),
@@ -89,7 +99,7 @@ def main():
         stats[split[cv_id]] += 1
     for f in files.values():
         f.close()
-    (OUT / "labels.json").write_text(json.dumps({"verdict": VERDICT, "location": LOCATION, "seniority": SENIORITY,
+    (out_dir / "labels.json").write_text(json.dumps({"verdict": VERDICT, "location": LOCATION, "seniority": SENIORITY,
                                                  "line_met": LINE_MET}, indent=1))
     print(f"CVs {n}, examples {dict(stats)}")
     print(f"requirements matched to a posting line: {req_matched}/{req_total} = {req_matched / max(1, req_total):.0%}")

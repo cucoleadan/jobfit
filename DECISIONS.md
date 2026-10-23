@@ -158,3 +158,10 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 - **Shared test set:** every run now also reports `test_v1`, the frozen v1 test examples (788 pairs: v1 CVs, v1 pair kinds), so models trained on any dataset version are compared on the same examples. Checkpoints trained before this are re-scored locally with `scripts/eval_v1.py` using their own validation-fitted temperatures; the script is checked by reproducing a v1 model's reported test numbers.
 - **Run queue:** see PLAN.md, "Rigour gaps". Seeds and the LR check use Ettin-68M because it is cheap (~13 min/epoch); the 3-epoch LR runs double as the data-vs-epochs ablation (v2 at 3 epochs vs v1 at 3 epochs).
 - **Selection rule from here:** choose by validation scores; read test once per final model.
+
+## 2026-10-23: one canonical CV text (`scripts/cvtext.py`, dataset v3)
+
+- **Why:** on a real CV (the author's, HTML) the models rated jobs the author applied to as apply/stretch far less often than the teacher (best: ModernBERT-large 63% vs DeepSeek 93%, 30 jobs). The HTML-to-text step broke a line at every tag (165 one-field lines), a layout no synthetic CV has; the synthetic "PDF-extracted" CVs came out clean, so the model never saw conversion clutter.
+- **Choice:** normalise instead of augment. `html_to_text` is block-aware like a browser's `innerText`; `normalize_cv` maps any CV text to one layout (ALL-CAPS headings, "- " bullets, wrapped lines joined, page numbers and blank-line noise dropped, email/phone scrubbed). The same rules run on training CVs (dataset v3) and on the user's CV in the browser, so the model only sees one layout. Rule-based so the browser port is exact.
+- **v3 = v2 with normalised CVs** (same pairs, labels and split). `build_dataset.py --raw-cv` still reproduces v2 byte-for-byte.
+- Caveat: a quick re-flow of the author's CV moved real-CV scores by 10-13 points but did not close the gap, so layout is only part of it; the per-head diagnosis is in the private notes.
