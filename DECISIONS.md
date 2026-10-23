@@ -151,7 +151,7 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 
 ## 2026-10-23: 6 epochs as the default
 
-- Ettin-68M on v2 for 8 epochs: validation macro-F1 rises through epoch 4-5 (verdict 0.44 → 0.66, seniority 0.38 → 0.61), then stays within ±0.02 (noise) for epochs 5-8, with no drop (no overfitting). 6 epochs keeps a margin over the observed plateau without paying for flat epochs. Caveat: the linear decay schedule spans the whole run, so a 6-epoch run is not identical to epoch 6 of an 8-epoch run; the best checkpoint by validation verdict macro-F1 is kept either way.
+- Ettin-68M for 8 epochs (on v1 data, see EXPERIMENTS.md `ettin68-v1e8`): validation macro-F1 rises through epoch 4-5 (verdict 0.44 → 0.66, seniority 0.38 → 0.61), then stays within ±0.02 (noise) for epochs 5-8, with no drop (no overfitting). 6 epochs keeps a margin over the observed plateau without paying for flat epochs. Caveat: the linear decay schedule spans the whole run, so a 6-epoch run is not identical to epoch 6 of an 8-epoch run; the best checkpoint by validation verdict macro-F1 is kept either way.
 
 ## 2026-10-23: rigour runs and one shared test set
 

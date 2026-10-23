@@ -21,3 +21,4 @@ local.json
 
 # private: check against the author's own job-search verdicts
 scripts/labeller_check.py
+scripts/student_check.py

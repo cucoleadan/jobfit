@@ -141,5 +141,32 @@
  "params_m": 31.9,
  "dataset": "v1",
  "gpu": "Kaggle 2xT4",
- "wall_minutes": 18
+ "wall_minutes": 18,
+ "test_v1": {
+  "verdict": {
+   "acc": 0.7893,
+   "macro_f1": 0.5355,
+   "ece": 0.0245
+  },
+  "location": {
+   "acc": 0.8299,
+   "macro_f1": 0.8256,
+   "ece": 0.0373
+  },
+  "seniority": {
+   "acc": 0.7487,
+   "macro_f1": 0.5089,
+   "ece": 0.0322
+  },
+  "must_met": {
+   "acc": 0.769,
+   "macro_f1": 0.7591,
+   "ece": 0.0386
+  },
+  "line_met": {
+   "acc": 0.8789,
+   "macro_f1": 0.6216
+  },
+  "n": 788
+ }
 }
