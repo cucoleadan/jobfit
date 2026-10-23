@@ -152,3 +152,9 @@ Pilot 5: the target pair was still `skip` 16/20. Reasons, one by one:
 ## 2026-10-23: 6 epochs as the default
 
 - Ettin-68M on v2 for 8 epochs: validation macro-F1 rises through epoch 4-5 (verdict 0.44 → 0.66, seniority 0.38 → 0.61), then stays within ±0.02 (noise) for epochs 5-8, with no drop (no overfitting). 6 epochs keeps a margin over the observed plateau without paying for flat epochs. Caveat: the linear decay schedule spans the whole run, so a 6-epoch run is not identical to epoch 6 of an 8-epoch run; the best checkpoint by validation verdict macro-F1 is kept either way.
+
+## 2026-10-23: rigour runs and one shared test set
+
+- **Shared test set:** every run now also reports `test_v1`, the frozen v1 test examples (788 pairs: v1 CVs, v1 pair kinds), so models trained on any dataset version are compared on the same examples. Checkpoints trained before this are re-scored locally with `scripts/eval_v1.py` using their own validation-fitted temperatures; the script is checked by reproducing a v1 model's reported test numbers.
+- **Run queue:** see PLAN.md, "Rigour gaps". Seeds and the LR check use Ettin-68M because it is cheap (~13 min/epoch); the 3-epoch LR runs double as the data-vs-epochs ablation (v2 at 3 epochs vs v1 at 3 epochs).
+- **Selection rule from here:** choose by validation scores; read test once per final model.

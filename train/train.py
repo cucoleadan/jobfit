@@ -7,7 +7,7 @@ Heads on one encoder pass over "CV [SEP] job":
   and per job line: met (none/yes/partial/no) + must (0/1), applied per token and averaged over each line's
   tokens (a linear head commutes with mean pooling, so the browser can average token logits per line).
 Saves the best checkpoint by validation verdict macro-F1, per-head temperatures fitted on validation,
-and test metrics (accuracy, macro-F1, ECE) to <out>/metrics.json.
+and test metrics (accuracy, macro-F1, ECE) to <out>/metrics.json, on the full test split and on the v1 test examples (`test_v1`).
 """
 import argparse
 import datetime
@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from transformers import AutoModel, AutoTokenizer, get_linear_schedule_with_warmup
 
 HEADS = {"verdict": 3, "location": 3, "seniority": 3, "must_met": 2}
+V1_MAX_CV, V1_KINDS = 1973, {"target", "near", "seniority", "location"}  # the frozen v1 test examples, shared by every dataset version
 LINE_MET = 4
 
 
@@ -291,7 +292,10 @@ def main():
         _, raw = evaluate(core, enc["val"], args, device, pad_id)
         temps = {h: round(fit_temperature(lg, y), 4) for h, (lg, y) in raw.items()}
         test, _ = evaluate(core, enc["test"], args, device, pad_id, temps)
+        v1 = [i for i, ex in enumerate(data["test"]) if ex["cv_id"] <= V1_MAX_CV and ex["kind"] in V1_KINDS]
+        test_v1, _ = evaluate(core, [enc["test"][i] for i in v1], args, device, pad_id, temps)
         metrics = {"model": args.model, "args": vars(args), "epochs": log, "temperatures": temps, "test": test,
+                   "test_v1": {**test_v1, "n": len(v1)},
                    "params_m": round(sum(p.numel() for p in core.parameters()) / 1e6, 1)}
         (out / "metrics.json").write_text(json.dumps(metrics, indent=1))
         tok.save_pretrained(out / "tokenizer")
